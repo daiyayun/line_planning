@@ -1,0 +1,8 @@
+model line_plan.mod; 
+data line_plan.dat;
+
+option solver cplex; 
+solve;
+
+display x;
+display y;
