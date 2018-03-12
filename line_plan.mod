@@ -4,13 +4,17 @@ param p >= 1, integer; # number of passenger paths
 param d >= 1, integer; # number of od pairs
 param l >= 1, integer; # number of lines
 param B >= 0; # budget
+param lowerb >= 0, integer;
+param upperb >= 0, integer;
 
 set V:=1..n; # set of vertices
 set A:=1..m; # set of edges(directed)
+set Aindex within {1..m,A,A}; # index for edges
 set P:=1..p; # set of all passenger paths
 set D:=1..d; # set of od pairs
+set Dindex within {1..d,A,A}; # index for edges
 set L:=1..l; # set of lines
-set F; # set of frequences
+set F:=lowerb..upperb; # set of frequences
 
 param od{D}; # matrice o/d
 param C{L}; # fixed cost of each line
