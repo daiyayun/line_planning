@@ -1,0 +1,41 @@
+# ----------------------------------------------------------------
+# Column generation for LP relaxation of line planning model
+# ----------------------------------------------------------------
+
+option solver cplex;
+option solution_round 6;
+
+model column_generation.mod;
+data column_generation.dat;
+
+problem line_plan: x, y, travel_time, demand, capacity, frequence, budget;
+    option presolve 0;
+
+# initialize the paths, each o/d pair has only one shortest path
+let {i in D} np[i] := 1;
+# Dijkstra... to fill the param path
+# ..........
+# ..........
+# ..........
+# ..........
+
+repeat{
+    solve line_plan;
+
+    let {d in D} pi[d] := demand[d].dual;
+    let {a in A} mu{a} := capacity[a].dual;
+
+    # Dijkstra...... sub problem
+    # ...........
+    # ...........
+    # ...........
+    # if there exists a path s - t(indice d) shorter than pi[d]:
+    if ..(shortest path < pi[d])... then{
+        let np[d] := np[d] + 1;
+        let {j in np[d], a in A} path[d, j, a] :=  ; # binary
+    } 
+    else break;
+};
+
+display x;
+display y;
