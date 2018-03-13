@@ -12,27 +12,162 @@ problem line_plan: x, y, travel_time, demand, capacity, frequence, budget;
     option presolve 0;
 
 # initialize the paths, each o/d pair has only one shortest path
-let {i in D} np[i] := 1;
+let {(o,d) in D} np[o,d] := 1;
 # Dijkstra... to fill the param path
 # ..........
 # ..........
 # ..........
 # ..........
+param nperm default 0; # Number of permanently-labeled nodes
+param temp{V} binary default 1; # Number of temporary-labeled nodes
+param minimum; # Minimum node
+param mindist default Infinity; # Minimum distance
+param destination;
+
+param dist {V} default Infinity;	   # distance lables
+param pred {V} default 0;		   # predecessor on shortest path
+
+param current;
+param predecessor;
+
+param hasbroken default 0;
+
+param source default 1;
+
+param vleft binary default 1; #parameter
+
+for {s in V} {
+	let vleft := 1;
+	for {v in V} {
+		let dist[v] := Infinity;
+		let pred[v] := 0;
+		let temp[v] := 1;
+	}
+	let nperm := 0;
+	
+
+	let dist[s] := 0;
+	repeat while nperm < card(V) and vleft == 1 {
+	  let minimum := 0;
+	  let mindist := Infinity;
+
+	  for {v in V} {
+		  if dist[v] < mindist and temp[v] == 1 then {
+			  let mindist := dist[v];
+			  let minimum := v;
+		  }
+	  }
+	  if mindist == Infinity then let vleft := 0;
+	  else {
+		  let nperm := nperm + 1;
+		  let destination:=minimum;
+		  let temp[destination] := 0;
+
+		  for {j in V: (destination,j) in A and temp[j] == 1}
+		   if dist[j] > dist[destination] + time[destination,j] then {
+			 let dist[j] := dist[destination] + time[destination,j];
+			 let pred[j] := destination;
+		   }
+	  }
+	};
+	#display s;
+	#display dist;
+	#display pred;
+	for {end in V: (s, end) in D} {
+		let current := end;
+		let predecessor := pred[current];
+		if predecessor != 0 then {
+			let path[s, end, 1, predecessor, current] := 1;
+			repeat while predecessor != s {
+				let current := predecessor;
+				let predecessor := pred[predecessor];
+				if predecessor == 0 then break;
+				let path[s, end, 1, predecessor, current] := 1;
+			}
+		}
+	}
+}
 
 repeat{
     solve line_plan;
 
-    let {d in D} pi[d] := demand[d].dual;
-    let {a in A} mu{a} := capacity[a].dual;
+    let {(o,d) in D} pi[o,d] := demand[o,d].dual;
+    let {(v1, v2) in A} mu[v1,v2] := capacity[v1,v2].dual;
 
     # Dijkstra...... sub problem
     # ...........
     # ...........
     # ...........
     # if there exists a path s - t(indice d) shorter than pi[d]:
-    if ..(shortest path < pi[d])... then{
-        let np[d] := np[d] + 1;
-        let {a in A} path[d, np[d], a] :=  ; # binary
+	let source:=1;
+	for {i in 1..n} {
+		let vleft := 1;
+		for {v in V} {
+			let dist[v] := Infinity;
+			let pred[v] := 0;
+			let temp[v] := 1;
+		}
+		let nperm := 0;
+		
+
+		let dist[source] := 0;
+		repeat while nperm < card(V) and vleft == 1{
+		  let minimum := 0;
+		  let mindist := Infinity;
+
+		  for {v in V} {
+			  if dist[v] < mindist and temp[v] == 1 then {
+				  let mindist := dist[v];
+				  let minimum := v;
+			  }
+		  }
+		  if mindist == Infinity then let vleft := 0;
+		  else {
+			  let nperm := nperm + 1;
+			  let destination:=minimum;
+			  if (source,destination) in D and dist[destination] < pi[source,destination] then {
+				  break;
+				  break;
+				  let hasbroken:=1;
+			  }
+			  let temp[destination] := 0;
+
+			  for {j in V: (destination,j) in A and temp[j] == 1}
+			   if dist[j] > dist[destination] + time[destination,j] + mu[destination,j] then {
+				 let dist[j] := dist[destination] + time[destination,j] + mu[destination,j];
+				 let pred[j] := destination;
+			   }
+		  }
+		};
+		#display source;
+		#display dist;
+		#display pred;
+		for {end in V: (source, end) in D} {
+			let current := end;
+			let predecessor := pred[current];
+			if predecessor != 0 then {
+				let path[source, end, 1, predecessor, current] := 1;
+				repeat while predecessor != source {
+					let current := predecessor;
+					let predecessor := pred[predecessor];
+					if predecessor == 0 then break;
+					let path[source, end, 1, predecessor, current] := 1;
+				}
+			}
+		}
+		let source := source + 1;
+	}
+    if hasbroken == 1 then{
+        let np[source, destination] := np[source, destination] + 1;
+		## Recalculate shortest path from pred matrix and put it in path
+		let current := destination;
+		let predecessor := pred[destination];
+		let path[source, destination, np[source, destination], predecessor, current] := 1;
+		repeat while predecessor != source {
+			let current := predecessor;
+			let predecessor := pred[predecessor];
+			let path[source, destination, 1, predecessor, current] := 1;
+		}
     } 
     else break;
 };
