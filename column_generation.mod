@@ -19,16 +19,16 @@ param C{L}; # fixed cost of each line
 param K{L}; # capacity of each line
 param line{A, L} binary; # set of all lines
 param np{D}; # number of paths for each od pair
-param path{i in D, {1..np[i]}, A}; # all the paths
+param path{(o,d) in D, {1..np[o,d]}, A} default 0; # all the paths
 param time{A} >= 0; # travelling time of each edge
 
 var x{L, F} >= 0;
-var y{i in D, {1..np[i]}} >= 0;
+var y{(o,d) in D, {1..np[o,d]}} >= 0;
 
-minimize travel_time: sum{i in D, j in {1..np[i]}, a in A} (y[i, j] * time[a] * path[i, j, a]);
+minimize travel_time: sum{(o,d) in D, j in {1..np[o,d]}, (v1, v2) in A} (y[o, d, j] * time[v1, v2] * path[o, d, j, v1, v2]);
 
-subject to demand{i in D}: sum{j in {1..np[i]}} y[i, j] = od[i];
-subject to capacity{i in A}: sum{j in D, k in {1..np[j]}} path[j, k, i]*y[j, k] <= sum{j in L, f in F} K[j]*line[i, j]*f*x[j, f];
+subject to demand{(o,d) in D}: sum{j in {1..np[o,d]}} y[o, d, j] = od[o, d];
+subject to capacity{(v1, v2) in A}: sum{(o,d) in D, k in {1..np[o,d]}} path[o, d, k, v1, v2]*y[o, d, k] <= sum{j in L, f in F} K[j]*line[v1, v2, j]*f*x[j, f];
 subject to frequence{i in L}: sum{f in F} x[i, f] <= 1;
 subject to budget: sum{i in L, f in F} C[i]*x[i, f] <= B;
 

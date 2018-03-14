@@ -1,8 +1,7 @@
 model line_plan.mod; 
-data line_plan.dat;
+data line_plan2.dat;
 
 option solver cplex; 
 solve;
 
-display x;
-display y;
+display travel_time;
