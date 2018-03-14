@@ -267,7 +267,7 @@ with open('line_planning_original\line_plan2.dat', 'w') as file:
     ## Costs (constant = 1)
     file.write('param C :=\n')
     for i in range(linenumb):
-        file.write('%s 1   ' % (i+1))
+        file.write('%s %s   ' % (i+1, cost))
         if (i%10 == 9):
             file.write('\n')
     file.write(';\n\n')
