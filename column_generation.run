@@ -30,6 +30,11 @@ param hasbroken default 0; #indicates if we have a shortest path that can be add
 
 param source default 1;
 
+param tolerance := 0.000001;
+param oldvalue default 0;
+param newvalue default -1;
+
+
 # Dijkstra to fill the param path for initialization
 for {s in V} {
 	for {v in V} {
@@ -38,8 +43,6 @@ for {s in V} {
 		let temp[v] := 1;
 	}
 	let nperm := 0;
-	
-
 	let dist[s] := 0;
 	repeat while nperm < card(V) {
 	  let minimum := 0;
@@ -82,7 +85,10 @@ for {s in V} {
 	}
 }
 
-repeat{
+#param dualcounter := 0;
+param itercounter default 0;
+repeat while (oldvalue - newvalue > tolerance or itercounter < 2){
+	let hasbroken := 0;
     solve line_plan;
 
     let {(o,d) in D} pi[o,d] := demand[o,d].dual;
@@ -97,15 +103,13 @@ repeat{
 			let temp[v] := 1;
 		}
 		let nperm := 0;
-		
-
 		let dist[source] := 0;
 		repeat while nperm < card(V){
 		  let minimum := 0;
 		  let mindist := Infinity;
 
 		  for {v in V} {
-			  if dist[v] < mindist then {
+			  if dist[v] < mindist and temp[v] == 1 then {
 				  let mindist := dist[v];
 				  let minimum := v;
 			  }
@@ -115,9 +119,11 @@ repeat{
 			  let nperm := nperm + 1;
 			  let destination:=minimum;
 			  if (source,destination) in D and dist[destination] < pi[source,destination] then {
+				
+				  #let dualcounter := dualcounter + 1;
+				  let hasbroken := 1;
 				  break;
-				  break;
-				  let hasbroken:=1;
+
 			  }
 			  let temp[destination] := 0;
 
@@ -127,24 +133,14 @@ repeat{
 				 let pred[j] := destination;
 			   }
 		  }
+		
 		};
 		#display source;
 		#display dist;
 		#display pred;
-		for {end in V: (source, end) in D} {
-			let current := end;
-			let predecessor := pred[current];
-			if predecessor != 0 then {
-				let path[source, end, 1, predecessor, current] := 1;
-				repeat while predecessor != source {
-					let current := predecessor;
-					let predecessor := pred[predecessor];
-					if predecessor == 0 then break;
-					let path[source, end, 1, predecessor, current] := 1;
-				}
-			}
-		}
+		if hasbroken == 1 then break;
 		let source := source + 1;
+	
 	}
 	# if there exists a path s - t(indice d) shorter than pi[d]:
     if hasbroken == 1 then{
@@ -158,11 +154,23 @@ repeat{
 			let predecessor := pred[predecessor];
 			let path[source, destination, np[source, destination], predecessor, current] := 1;
 		}
+		
     } 
     else break;
+	let oldvalue := newvalue;
+	let newvalue := travel_time;
+	display oldvalue;
+	display newvalue;
+	let itercounter := itercounter + 1;
 };
 
 display x;
 display y;
 #display path;
 display travel_time;
+display _total_solve_time;
+display _ampl_time;
+#display dualcounter;
+display hasbroken;
+display mu;
+display pi;
